@@ -1,0 +1,27 @@
+{
+  "name": "librechat-ui",
+  "productName": "LibreChat UI",
+  "type": "module",
+  "version": "1.0.0",
+  "author": "Ilja Leiko <leikoilja@gmail.com>",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "app:dir": "electron-builder --dir",
+    "app:dist": "electron-builder"
+  },
+  "build": {
+    "appId": "com.librechat-ui",
+    "mac": {
+      "category": "public.ai.chat.librechat"
+    }
+  },
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8"
+  },
+  "dependencies": {
+    "electron-store": "^10.0.0"
+  }
+}
