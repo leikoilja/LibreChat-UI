@@ -3,7 +3,7 @@
   "productName": "LibreChat UI",
   "type": "module",
   "version": "1.0.0",
-  "author": "Ilja Leiko <leikoilja@gmail.com>",
+  "author": "@leikoilja",
   "main": "index.js",
   "license": "MIT",
   "scripts": {
