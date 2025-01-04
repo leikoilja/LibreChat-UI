@@ -54,7 +54,7 @@ function createMainWindow(serverHost) {
             if (!document.getElementById('reset-server-button')) {
                 const button = document.createElement('button');
                 button.id = 'reset-server-button';
-                button.innerHTML = 'Reset Host';
+                button.innerHTML = 'Sign out';
                 button.style.position = 'fixed';
                 button.style.bottom = '20px';
                 button.style.right = '20px';
@@ -64,10 +64,11 @@ function createMainWindow(serverHost) {
                 button.style.color = 'white';
                 button.style.border = 'none';
                 button.style.borderRadius = '4px';
+
                 button.style.cursor = 'pointer';
                 button.style.fontFamily = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
                 button.onclick = () => {
-                    if (confirm('Are you sure you want to reset the server configuration?')) {
+                    if (confirm('Are you sure you want to sign out from the server?')) {
                         require('electron').ipcRenderer.send('reset-server');
                     }
                 };
