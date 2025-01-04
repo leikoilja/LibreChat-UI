@@ -1,5 +1,9 @@
 # LibreChat UI
 
+<div align="center">
+  <img src="build/icon.png" alt="icon" width="200"/>
+</div>
+
 ## Overview
 
 LibreChat UI is a native desktop application wrapper for self-hosted LibreChat instances, built using Electron. This application provides a convenient way to access your LibreChat instance directly from your desktop.
