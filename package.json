@@ -18,14 +18,14 @@
     "appId": "com.librechat-ui",
     "mac": {
       "category": "public.ai.chat.librechat",
-      "artifactName": "${productName}-${version}-mac.${ext}"
+      "artifactName": "${productName}-v${version}-mac.${ext}"
     },
     "win": {
-      "artifactName": "${productName}-${version}-win.${ext}"
+      "artifactName": "${productName}-v${version}-win.${ext}"
     },
     "linux": {
       "target": "snap",
-      "artifactName": "${productName}-${version}-linux.${ext}"
+      "artifactName": "${productName}-v${version}-linux.${ext}"
     },
     "publish": "github"
   },

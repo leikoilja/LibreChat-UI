@@ -47,7 +47,7 @@ jobs:
       - name: Configure Environment Variables
         run: |
           echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
-          echo "VERSION=$(echo ${{ needs.release-please.outputs.tag_name }} | sed 's/v//'))" >> $GITHUB_ENV
+          echo "VERSION=$(echo ${{ needs.release-please.outputs.tag_name }} | sed 's/v//')" >> $GITHUB_ENV
           echo "UPLOAD_URL=${{ needs.release-please.outputs.upload_url }}" >> $GITHUB_ENV
 
       - name: Build the application (MacOS)
