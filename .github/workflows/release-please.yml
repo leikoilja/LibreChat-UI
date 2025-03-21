@@ -1,0 +1,172 @@
+name: release-please
+
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest # Release-please needs a Linux environment
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      upload_url: ${{ steps.release.outputs.upload_url }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ github.token }}
+
+  build-and-release:
+    needs: release-please # Ensure release-please runs first
+    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest] # Build on all platforms
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: 'yarn' # or 'npm'
+
+      - name: Install dependencies
+        run: yarn install --immutable # or npm ci
+
+      - name: Configure Environment Variables
+        run: |
+          echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+          echo "VERSION=$(echo ${{ needs.release-please.outputs.tag_name }} | sed 's/v//')" >> $GITHUB_ENV
+          echo "UPLOAD_URL=${{ needs.release-please.outputs.upload_url }}" >> $GITHUB_ENV
+
+      - name: Build the application (MacOS)
+        if: matrix.os == 'macos-latest'
+        run: yarn app:dist:mac # or npm run dist:mac. adjust script name to match package.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build the application (Windows)
+        if: matrix.os == 'windows-latest'
+        run: yarn app:dist:win # or npm run dist:win. adjust script name to match package.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build the application (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: yarn app:dist:linux # or npm run dist:linux. adjust script name to match package.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Find App Name (MacOS)
+        id: find_app_name_mac
+        if: matrix.os == 'macos-latest'
+        run: |
+          echo "APP_FILENAME=$(ls -1 dist/ | grep 'LibreChat UI-' | grep '.dmg' | head -n 1)" >> $GITHUB_ENV
+          echo "::set-output name=app_filename::${APP_FILENAME}"
+
+      - name: Find App Name (Windows)
+        id: find_app_name_win
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $appFileName = Get-ChildItem -Path "dist/" -Filter "LibreChat UI-*.exe" | Sort-Object -Property LastWriteTime | Select-Object -Last 1 | ForEach-Object {$_.Name}
+          if ($appFileName) {
+            echo "APP_FILENAME=$appFileName" >> $GITHUB_ENV
+            echo "::set-output name=app_filename::$appFileName"
+          } else {
+            echo "No EXE file found!"
+            exit 1
+          }
+
+      - name: Find App Name (Linux)
+        id: find_app_name_linux
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          echo "APP_FILENAME=$(ls -1 dist/ | grep 'LibreChat UI-' | grep '.snap' | head -n 1)" >> $GITHUB_ENV
+          echo "::set-output name=app_filename::${APP_FILENAME}"
+
+      - name: Rename and Prepare Release Files (MacOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          APP_FILENAME="${{ env.APP_FILENAME }}"
+          NEW_FILENAME="LibreChat-UI-${{ env.VERSION }}-mac.dmg"
+          cd dist/
+          mv "$APP_FILENAME" "$NEW_FILENAME"
+          echo "New Filename MAC: $NEW_FILENAME"
+          echo "APP_PATH=$GITHUB_WORKSPACE/dist/$NEW_FILENAME" >> $GITHUB_ENV
+          echo "::set-output name=app_path::$APP_PATH"
+          cd ..
+
+      - name: Rename and Prepare Release Files (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          if ("${{ env.APP_FILENAME }}") {
+            $APP_FILENAME = "${{ env.APP_FILENAME }}"
+            $NEW_FILENAME = "LibreChat-UI-${{ env.VERSION }}-win.exe"
+            cd dist/
+            Rename-Item -Path $APP_FILENAME -NewName $NEW_FILENAME
+            echo "New Filename WIN: $NEW_FILENAME"
+            echo "APP_PATH=$GITHUB_WORKSPACE/dist/$NEW_FILENAME" >> $GITHUB_ENV
+            echo "::set-output name=app_path::$APP_PATH"
+            cd ..
+          } else {
+            echo "APP_FILENAME is empty. Skipping Rename-Item."
+            exit 1
+          }
+
+      - name: Rename and Prepare Release Files (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          APP_FILENAME="${{ env.APP_FILENAME }}"
+          NEW_FILENAME="LibreChat-UI-${{ env.VERSION }}-linux.snap"
+          cd dist/
+          mv "$APP_FILENAME" "$NEW_FILENAME"
+          echo "New Filename LINUX: $NEW_FILENAME"
+          echo "APP_PATH=$GITHUB_WORKSPACE/dist/$NEW_FILENAME" >> $GITHUB_ENV
+          echo "::set-output name=app_path::$APP_PATH"
+          cd ..
+
+      - name: Upload Release Asset (MacOS)
+        uses: actions/upload-release-asset@v1
+        if: matrix.os == 'macos-latest'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ env.UPLOAD_URL }}
+          asset_path: ${{ env.APP_PATH }}
+          asset_name: LibreChat-UI-${{ env.VERSION }}-mac.dmg
+          asset_content_type: application/octet-stream # Adjust as needed
+
+      - name: Upload Release Asset (Windows)
+        uses: actions/upload-release-asset@v1
+        if: matrix.os == 'windows-latest'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ env.UPLOAD_URL }}
+          asset_path: ${{ env.APP_PATH }}
+          asset_name: LibreChat-UI-${{ env.VERSION }}-win.exe
+          asset_content_type: application/octet-stream # Adjust as needed
+
+      - name: Upload Release Asset (Linux)
+        uses: actions/upload-release-asset@v1
+        if: matrix.os == 'ubuntu-latest'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ env.UPLOAD_URL }}
+          asset_path: ${{ env.APP_PATH }}
+          asset_name: LibreChat-UI-${{ env.VERSION }}-linux.snap
+          asset_content_type: application/octet-stream # Adjust as needed
