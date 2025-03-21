@@ -9,13 +9,25 @@
   "scripts": {
     "start": "electron .",
     "app:dir": "electron-builder --dir",
-    "app:dist": "electron-builder"
+    "app:dist": "electron-builder",
+    "app:dist:mac": "electron-builder --mac",
+    "app:dist:win": "electron-builder --win",
+    "app:dist:linux": "electron-builder --linux"
   },
   "build": {
     "appId": "com.librechat-ui",
     "mac": {
-      "category": "public.ai.chat.librechat"
-    }
+      "category": "public.ai.chat.librechat",
+      "artifactName": "${productName}-${version}-mac.${ext}"
+    },
+    "win": {
+      "artifactName": "${productName}-${version}-win.${ext}"
+    },
+    "linux": {
+      "target": "snap",
+      "artifactName": "${productName}-${version}-linux.${ext}"
+    },
+    "publish": "github"
   },
   "devDependencies": {
     "electron": "^33.2.1",
