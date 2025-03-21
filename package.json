@@ -1,6 +1,7 @@
 {
   "name": "librechat-ui",
   "productName": "LibreChat UI",
+  "description": "LibreChat UI is a desktop application for LibreChat",
   "type": "module",
   "version": "1.0.0",
   "author": "@leikoilja",
@@ -9,13 +10,26 @@
   "scripts": {
     "start": "electron .",
     "app:dir": "electron-builder --dir",
-    "app:dist": "electron-builder"
+    "app:dist": "electron-builder",
+    "app:dist:mac": "electron-builder --mac",
+    "app:dist:win": "electron-builder --win",
+    "app:dist:linux": "electron-builder --linux"
   },
   "build": {
     "appId": "com.librechat-ui",
     "mac": {
-      "category": "public.ai.chat.librechat"
-    }
+      "category": "public.ai.chat.librechat",
+      "artifactName": "${productName}-v${version}-mac.${ext}",
+      "identity": null
+    },
+    "win": {
+      "artifactName": "${productName}-v${version}-win.${ext}"
+    },
+    "linux": {
+      "target": "snap",
+      "artifactName": "${productName}-v${version}-linux.${ext}"
+    },
+    "publish": "github"
   },
   "devDependencies": {
     "electron": "^33.2.1",
