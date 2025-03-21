@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, dialog } from "electron";
 import path from "path";
 import { fileURLToPath } from "url";
 import Store from "electron-store";
@@ -56,7 +56,7 @@ function createMainWindow(serverHost) {
                 button.id = 'reset-server-button';
                 button.innerHTML = 'Sign out';
                 button.style.position = 'fixed';
-                button.style.bottom = '20px';
+                button.style.bottom = '30px';
                 button.style.right = '20px';
                 button.style.zIndex = '10000';
                 button.style.padding = '8px 16px';
@@ -82,7 +82,7 @@ function createMainWindow(serverHost) {
     const style = document.createElement('style');
     style.textContent = \`
       #reset-server-button:hover {
-        background-color: #ff6666 !important;
+        background-color = '#ff6666' !important;
       }
     \`;
     document.head.appendChild(style);
@@ -127,8 +127,33 @@ app.on("activate", () => {
 
 ipcMain.on("submit-server-host", (event, serverHost) => {
   console.log("Saving server host:", serverHost);
-  store.set("serverHost", serverHost);
-  createMainWindow(serverHost);
+
+  // Check if the server host starts with 'http://'
+  if (serverHost.startsWith("http://")) {
+    // Show a warning dialog
+    dialog.showMessageBox({
+      type: "warning",
+      title: "Security Warning",
+      message:
+        "You are using an HTTP connection, which is insecure. Data transmitted over HTTP is not encrypted and can be intercepted by third parties. It is highly recommended to use HTTPS for a secure connection.",
+      buttons: ["Continue", "Cancel"],
+    }).then((result) => {
+      if (result.response === 0) {
+        // User chose to continue
+        store.set("serverHost", serverHost);
+        createMainWindow(serverHost);
+      } else {
+        // User chose to cancel - do nothing or clear the input
+        console.log("User cancelled due to security warning.");
+        // Optionally, send an event back to the login window to clear the input field.
+        event.sender.send('clear-server-host-input');
+      }
+    });
+  } else {
+    // If it's HTTPS or another protocol, proceed without warning
+    store.set("serverHost", serverHost);
+    createMainWindow(serverHost);
+  }
 });
 
 ipcMain.on("reset-server", () => {
