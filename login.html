@@ -230,11 +230,11 @@
       <div class="tips">
         <h3>📝 Quick Tips</h3>
         <ul>
-          <li>Enter your server domain without 'http://' or 'https://'</li>
+          <li>Enter your server domain with or without 'http://' or 'https://'</li>
           <li>
             Make sure your LibreChat instance is properly configured and running
           </li>
-          <li>The connection will default to HTTPS for security</li>
+          <li>The connection will default to HTTPS for security, unless specified otherwise</li>
         </ul>
       </div>
     </div>
@@ -245,9 +245,7 @@
       function submitForm() {
         const serverHost = document.getElementById("serverHost").value;
         if (serverHost) {
-          // Remove any protocol prefix if user added it
-          const cleanHost = serverHost.replace(/^(https?:\/\/)/, "");
-          ipcRenderer.send("submit-server-host", cleanHost);
+          ipcRenderer.send("submit-server-host", serverHost);
         }
       }
 
@@ -283,6 +281,10 @@
             }
         `;
       document.head.appendChild(style);
+
+      ipcRenderer.on('clear-server-host-input', () => {
+            document.getElementById('serverHost').value = ''; // Clear the input
+        });
     </script>
   </body>
 </html>
