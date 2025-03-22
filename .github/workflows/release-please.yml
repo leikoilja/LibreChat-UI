@@ -49,32 +49,24 @@ jobs:
           echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
           echo "VERSION=$(echo ${{ needs.release-please.outputs.tag_name }} | sed 's/v//')" >> $GITHUB_ENV
           echo "UPLOAD_URL=${{ needs.release-please.outputs.upload_url }}" >> $GITHUB_ENV
-          echo "OPENPANEL_CLIENT_ID=${{ secrets.OPENPANEL_CLIENT_ID }}" >> $GITHUB_ENV
-          echo "OPENPANEL_CLIENT_SECRET=${{ secrets.OPENPANEL_CLIENT_SECRET }}" >> $GITHUB_ENV
 
       - name: Build the application (MacOS)
         if: matrix.os == 'macos-latest'
-        run: yarn app:dist:mac # or npm run dist:mac. adjust script name to match package.json
+        run: OPENPANEL_CLIENT_ID="${{ secrets.OPENPANEL_CLIENT_ID }}" OPENPANEL_CLIENT_SECRET="${{ secrets.OPENPANEL_CLIENT_SECRET }}" yarn app:dist:mac # or npm run dist:mac. adjust script name to match package.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OPENPANEL_CLIENT_ID: ${{ secrets.OPENPANEL_CLIENT_ID }}
-          OPENPANEL_CLIENT_SECRET: ${{ secrets.OPENPANEL_CLIENT_SECRET }}
 
       - name: Build the application (Windows)
         if: matrix.os == 'windows-latest'
-        run: yarn app:dist:win # or npm run dist:win. adjust script name to match package.json
+        run: OPENPANEL_CLIENT_ID="${{ secrets.OPENPANEL_CLIENT_ID }}" OPENPANEL_CLIENT_SECRET="${{ secrets.OPENPANEL_CLIENT_SECRET }}" yarn app:dist:win # or npm run dist:win. adjust script name to match package.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OPENPANEL_CLIENT_ID: ${{ secrets.OPENPANEL_CLIENT_ID }}
-          OPENPANEL_CLIENT_SECRET: ${{ secrets.OPENPANEL_CLIENT_SECRET }}
 
       - name: Build the application (Linux)
         if: matrix.os == 'ubuntu-latest'
-        run: yarn app:dist:linux # or npm run dist:linux. adjust script name to match package.json
+        run: OPENPANEL_CLIENT_ID="${{ secrets.OPENPANEL_CLIENT_ID }}" OPENPANEL_CLIENT_SECRET="${{ secrets.OPENPANEL_CLIENT_SECRET }}" yarn app:dist:linux # or npm run dist:linux. adjust script name to match package.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OPENPANEL_CLIENT_ID: ${{ secrets.OPENPANEL_CLIENT_ID }}
-          OPENPANEL_CLIENT_SECRET: ${{ secrets.OPENPANEL_CLIENT_SECRET }}
 
       - name: Find App Name (MacOS)
         id: find_app_name_mac
