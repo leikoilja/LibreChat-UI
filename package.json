@@ -9,7 +9,6 @@
   "license": "MIT",
   "scripts": {
     "start": "electron .",
-    "app:dir": "electron-builder --dir",
     "app:dist": "electron-builder",
     "app:dist:mac": "electron-builder --mac",
     "app:dist:win": "electron-builder --win",
@@ -36,6 +35,8 @@
     "electron-builder": "^25.1.8"
   },
   "dependencies": {
+    "@openpanel/sdk": "^1.0.0",
+    "electron-is-dev": "^3.0.1",
     "electron-store": "^10.0.0"
   }
 }
