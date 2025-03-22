@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog } from "electron";
+import { app, BrowserWindow, ipcMain, dialog, Menu } from "electron";
 import path from "path";
 import { fileURLToPath } from "url";
 import Store from "electron-store";
@@ -49,45 +49,6 @@ function createMainWindow(serverHost) {
   console.log("Loading URL:", url);
   mainWindow.loadURL(url);
 
-  mainWindow.webContents.on("did-finish-load", () => {
-    mainWindow.webContents.executeJavaScript(`
-            if (!document.getElementById('reset-server-button')) {
-                const button = document.createElement('button');
-                button.id = 'reset-server-button';
-                button.innerHTML = 'Sign out';
-                button.style.position = 'fixed';
-                button.style.bottom = '30px';
-                button.style.right = '20px';
-                button.style.zIndex = '10000';
-                button.style.padding = '8px 16px';
-                button.style.backgroundColor = '#ff4444';
-                button.style.color = 'white';
-                button.style.border = 'none';
-                button.style.borderRadius = '4px';
-
-                button.style.cursor = 'pointer';
-                button.style.fontFamily = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-                button.onclick = () => {
-                    if (confirm('Are you sure you want to sign out from the server?')) {
-                        require('electron').ipcRenderer.send('reset-server');
-                    }
-                };
-                document.body.appendChild(button);
-            }
-        `);
-  });
-
-  // Add hover effect
-  mainWindow.webContents.executeJavaScript(`
-    const style = document.createElement('style');
-    style.textContent = \`
-      #reset-server-button:hover {
-        background-color = '#ff6666' !important;
-      }
-    \`;
-    document.head.appendChild(style);
-  `);
-
   app.setName("LibreChat UI");
 
   if (loginWindow && !loginWindow.isDestroyed()) {
@@ -96,6 +57,9 @@ function createMainWindow(serverHost) {
 
   // Log when button is created
   console.log("Reset button should be created");
+
+  // Call function to build menu
+  buildMenu(serverHost); // Pass serverHost to buildMenu
 }
 
 function initialize() {
@@ -177,3 +141,132 @@ app.on("render-process-gone", (event, webContents, details) => {
 app.on("child-process-gone", (event, details) => {
   console.error("Child process gone:", details);
 });
+
+function buildMenu(serverHost) { // Take serverHost as argument
+  const template = [
+    // { role: 'appMenu' }
+    ...(process.platform === 'darwin' ? [{
+      label: app.name,
+      submenu: [
+        { role: 'about' },
+        { type: 'separator' },
+        { role: 'services' },
+        { type: 'separator' },
+        { role: 'hide' },
+        { role: 'hideOthers' },
+        { role: 'unhide' },
+        { type: 'separator' },
+        { role: 'quit' }
+      ]
+    }] : []),
+    // { role: 'fileMenu' }
+    {
+      label: 'File',
+      submenu: [
+        process.platform === 'darwin' ? { role: 'close' } : { role: 'quit' }
+      ]
+    },
+    // Custom "Server" menu
+    {
+      label: 'Server',
+      submenu: [
+        {
+          label: 'Sign Out',
+          click: async () => {
+            const result = await dialog.showMessageBox({
+              type: 'question',
+              buttons: ['Sign Out', 'Cancel'],
+              defaultId: 1,
+              title: 'Sign Out Confirmation',
+              message: `Are you sure you want to sign out from the server?\n\n${serverHost}`, // Include serverHost in the message
+            });
+
+            if (result.response === 0) {
+              console.log("Resetting server configuration from menu");
+              store.delete("serverHost");
+              if (mainWindow) {
+                mainWindow.close();
+              }
+              createLoginWindow();
+            }
+          }
+        }
+      ]
+    },
+    // { role: 'editMenu' }
+    {
+      label: 'Edit',
+      submenu: [
+        { role: 'undo' },
+        { role: 'redo' },
+        { type: 'separator' },
+        { role: 'cut' },
+        { role: 'copy' },
+        { role: 'paste' },
+        ...(process.platform === 'darwin' ? [
+          { role: 'pasteAndMatchStyle' },
+          { role: 'delete' },
+          { role: 'selectAll' },
+          { type: 'separator' },
+          {
+            label: 'Speech',
+            submenu: [
+              { role: 'startSpeaking' },
+              { role: 'stopSpeaking' }
+            ]
+          }
+        ] : [
+          { role: 'delete' },
+          { type: 'separator' },
+          { role: 'selectAll' }
+        ])
+      ]
+    },
+    // { role: 'viewMenu' }
+    {
+      label: 'View',
+      submenu: [
+        { role: 'reload' },
+        { role: 'forceReload' },
+        { role: 'toggleDevTools' },
+        { type: 'separator' },
+        { role: 'resetZoom' },
+        { role: 'zoomIn' },
+        { role: 'zoomOut' },
+        { type: 'separator' },
+        { role: 'togglefullscreen' }
+      ]
+    },
+    // { role: 'windowMenu' }
+    {
+      label: 'Window',
+      submenu: [
+        { role: 'minimize' },
+        { role: 'zoom' },
+        ...(process.platform === 'darwin' ? [
+          { type: 'separator' },
+          { role: 'front' },
+          { type: 'separator' },
+          { role: 'window' }
+        ] : [
+          { role: 'close' }
+        ])
+      ]
+    },
+    {
+      role: 'help',
+      submenu: [
+        {
+          label: 'Learn More',
+          click: async () => {
+            const { shell } = require('electron')
+            await shell.openExternal('https://github.com/leikoilja/librechat-ui')
+          }
+        }
+      ]
+    }
+  ]
+
+  const menu = Menu.buildFromTemplate(template)
+  Menu.setApplicationMenu(menu)
+}
