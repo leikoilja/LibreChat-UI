@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/leikoilja/LibreChat-UI/compare/v1.2.0...v1.3.0) (2025-03-22)
+
+
+### 🚀 Features
+
+* add keyboard shortcuts for new chat and chat archive ([394b363](https://github.com/leikoilja/LibreChat-UI/commit/394b36371f804d35fc7039cfe50bbc28129571de))
+
 ## [1.2.0](https://github.com/leikoilja/LibreChat-UI/compare/v1.1.0...v1.2.0) (2025-03-22)
 
 
