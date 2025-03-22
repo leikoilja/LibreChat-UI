@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.3.1](https://github.com/leikoilja/LibreChat-UI/compare/v1.3.0...v1.3.1) (2025-03-22)
+
+
+### Documentation
+
+* add shortcuts documentation to readme ([de5e0c7](https://github.com/leikoilja/LibreChat-UI/commit/de5e0c76bc67b619a92e88cde0565e7886968db7))
+* **fix:** docs(fix):  ([de5e0c7](https://github.com/leikoilja/LibreChat-UI/commit/de5e0c76bc67b619a92e88cde0565e7886968db7))
+* fix ([de5e0c7](https://github.com/leikoilja/LibreChat-UI/commit/de5e0c76bc67b619a92e88cde0565e7886968db7))
+
 ## [1.3.0](https://github.com/leikoilja/LibreChat-UI/compare/v1.2.0...v1.3.0) (2025-03-22)
 
 
