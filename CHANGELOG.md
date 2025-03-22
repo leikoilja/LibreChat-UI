@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.0](https://github.com/leikoilja/LibreChat-UI/compare/v1.1.0...v1.2.0) (2025-03-22)
+
+
+### 🚀 Features
+
+* **add anonymous telemetry to better understand the wrapper usage:** feat(add anonymous telemetry to better understand the wrapper usage):  ([be7351c](https://github.com/leikoilja/LibreChat-UI/commit/be7351c8432308fa51b6e3f6cfd1e22198f1d703))
+* move sign out button from UI to the command bar ([3d88bb7](https://github.com/leikoilja/LibreChat-UI/commit/3d88bb7717e2a0178885a40a8d6ab155ca9ba5b5)), closes [#13](https://github.com/leikoilja/LibreChat-UI/issues/13)
+
 ## [1.1.0](https://github.com/leikoilja/LibreChat-UI/compare/v1.0.0...v1.1.0) (2025-03-21)
 
 
