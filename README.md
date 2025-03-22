@@ -30,6 +30,9 @@ LibreChat UI is a native desktop application wrapper for self-hosted LibreChat i
 ## Features
 
 - Native desktop application for LibreChat
+- Keyboard shortcuts
+  - `cmd+n / ctrl+n` to start a new chat
+  - `cmd+shift+a / ctrl+shift+a` to to archive the current chat
 - Cross-platform support (for now it's just macOS, but feel free to request more OS support)
 - Easy access to self-hosted or [managed](https://librechat-librechat.hf.space) LibreChat instances
 
