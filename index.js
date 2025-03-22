@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, Menu } from "electron";
+import { app, BrowserWindow, ipcMain, dialog, Menu, globalShortcut } from "electron";
 import path from "path";
 import { fileURLToPath } from "url";
 import Store from "electron-store";
@@ -106,6 +106,24 @@ function createMainWindow(serverHost) {
 
   // Call function to build menu
   buildMenu(serverHost); // Pass serverHost to buildMenu
+
+  // Register/unregister global shortcuts based on focus
+  mainWindow.on('focus', () => {
+    registerShortcuts(mainWindow);
+  });
+
+  mainWindow.on('blur', () => {
+    unregisterShortcuts();
+  });
+
+
+  // Register global shortcuts after mainWindow is created
+  mainWindow.webContents.on('did-finish-load', () => {
+    // Register on load as well, in case the window already has focus
+    if (mainWindow.isFocused()) {
+      registerShortcuts(mainWindow);
+    }
+  });
 }
 
 function initialize() {
@@ -116,6 +134,151 @@ function initialize() {
   } else {
     createLoginWindow();
   }
+}
+
+let shortcutRegistrationStatus = {
+  newChat: false,
+  archiveChat: false,
+};
+
+function registerShortcuts(mainWindow) {
+    if (shortcutRegistrationStatus.newChat && shortcutRegistrationStatus.archiveChat) {
+        return;
+    }
+
+    // Cmd+N (or Ctrl+N) to navigate to "/c/new"
+    if(!shortcutRegistrationStatus.newChat) {
+      shortcutRegistrationStatus.newChat = globalShortcut.register('CommandOrControl+N', () => {
+        const savedHost = store.get("serverHost");
+        if (savedHost) {
+            const url = `${savedHost}/c/new`;
+            console.log('Cmd+N (or Ctrl+N) is pressed: Navigating to ' + url);
+            if (mainWindow && !mainWindow.isDestroyed()) { // Check if mainWindow exists and is not destroyed
+              mainWindow.loadURL(url);
+            } else {
+              console.log('MainWindow is not available or has been destroyed. Shortcut cannot be executed.');
+            }
+
+        } else {
+            console.log('serverHost is not defined in store, check submit-server-host, skipping Ctrl+N');
+        }
+      });
+
+      if (!shortcutRegistrationStatus.newChat) {
+        console.error("Failed to register shortcut for New Chat.");
+      }
+    }
+
+    // Cmd+Shift+A (or Ctrl+Shift+A) to find and click the correct Archive button
+    if(!shortcutRegistrationStatus.archiveChat) {
+      shortcutRegistrationStatus.archiveChat = globalShortcut.register('CommandOrControl+Shift+A', () => {
+        console.log('Cmd+Shift+A (or Ctrl+Shift+A) is pressed: Confirming archive before proceeding.');
+
+        const currentURL = mainWindow.webContents.getURL();
+        const chatId = currentURL.match(/\/c\/([a-zA-Z0-9-]+)/)?.[1];
+
+        if (!chatId) {
+            console.log('Could not extract chat ID from URL.');
+            dialog.showMessageBox(mainWindow, {
+                type: 'error',
+                title: 'Error',
+                message: 'Could not determine which chat to archive. Please navigate to a valid chat before using this shortcut.',
+            });
+            return;
+        }
+
+        mainWindow.webContents.executeJavaScript(`
+            (async () => {
+                const chatId = "${chatId}";
+                console.log('ChatId: ' + chatId)
+                const linkSelector = 'a[href="/c/' + chatId + '"]';
+                console.log('Link selector:', linkSelector); // Log the selector
+
+                const anchor = document.querySelector(linkSelector);
+                console.log('Anchor element:', anchor); // Log the anchor element
+
+                let chatTitle = 'This chat';  // Default title
+                if (anchor) {
+                    chatTitle = anchor.textContent || 'This chat';
+                    console.log('Chat title:', chatTitle);
+
+                } else {
+                    console.log('Link with href="/c/${chatId}" not found.');
+                }
+                return chatTitle;
+            })();
+        `).then((chatTitle) => {
+            dialog.showMessageBox(mainWindow, {
+                type: 'question',
+                buttons: ['OK', 'Cancel'],
+                defaultId: 0,
+                title: 'Archive Confirmation',
+                message: `Are you sure you want to archive "${chatTitle}"? This action cannot be undone.`,
+            }).then((result) => {
+                if (result.response === 0) { // OK button clicked (or Enter pressed)
+                    console.log('User confirmed archiving. Proceeding...');
+
+                    mainWindow.webContents.executeJavaScript(`
+                        (async () => {
+                            const chatId = "${chatId}";
+                            console.log('ChatId: ' + chatId)
+                            const linkSelector = 'a[href="/c/' + chatId + '"]';
+                            console.log('Link selector:', linkSelector); // Log the selector
+
+                            const anchor = document.querySelector(linkSelector);
+                            console.log('Anchor element:', anchor); // Log the anchor element
+
+                            if (anchor) {
+                              let conversationMenuButton = anchor.parentElement.querySelector('div > button[aria-label="Conversation Menu Options"]');
+                              if (!conversationMenuButton) {
+                                console.log('Conversation Menu Button not found!');
+                                return;
+                              }
+                              console.log("Conversation Menu Button: ", conversationMenuButton)
+
+                            // Find the archive button within the same container
+                            const archiveElement = conversationMenuButton.parentElement.querySelector('div[role="menuitem"] svg.lucide-archive')?.closest('div[role="menuitem"]');
+                            if (archiveElement) {
+                                console.log("Archive element: ", archiveElement);
+                                archiveElement.click();
+                                return;
+                            } else {
+                                console.log('Archive button not found next to converstationMenuButton button.');
+                            }
+                          } else {
+                              console.log('Link with href="/c/${chatId}" not found.');
+                          }
+                        })();
+                    `);
+                } else {
+                    console.log('User cancelled archiving.');
+                }
+            });
+        }).catch(err => {
+            console.error("Error extracting chat title:", err);
+            dialog.showMessageBox(mainWindow, {
+                type: 'error',
+                title: 'Error',
+                message: 'Failed to determine chat title. Archiving may continue without the title in the confirmation message.',
+            }).then(() => {
+                // Proceed with archiving logic but user is already warned.
+            });
+        });
+      });
+
+      if (!shortcutRegistrationStatus.archiveChat) {
+        console.error("Failed to register shortcut for Archive Chat.");
+      }
+    }
+}
+
+function unregisterShortcuts() {
+  globalShortcut.unregister('CommandOrControl+N');
+  globalShortcut.unregister('CommandOrControl+Shift+A');
+  shortcutRegistrationStatus = {
+    newChat: false,
+    archiveChat: false,
+  };
 }
 
 app.whenReady().then(() => {
@@ -147,6 +310,10 @@ app.on("activate", () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     initialize();
   }
+});
+
+app.on('will-quit', () => {
+  unregisterShortcuts(); // Ensure shortcuts are unregistered on quit
 });
 
 ipcMain.on("submit-server-host", (event, serverHost) => {
@@ -230,17 +397,17 @@ function buildMenu(serverHost) { // Take serverHost as argument
     },
     // Custom "Server" menu
     {
-      label: 'Server',
+      label: 'LibreChat UI',
       submenu: [
         {
-          label: 'Sign Out',
+          label: 'Disconnect from host',
           click: async () => {
             const result = await dialog.showMessageBox({
               type: 'question',
-              buttons: ['Sign Out', 'Cancel'],
+              buttons: ['Disconnect', 'Cancel'],
               defaultId: 1,
-              title: 'Sign Out Confirmation',
-              message: `Are you sure you want to sign out from the server?\n\n${serverHost}`, // Include serverHost in the message
+              title: 'Disconnect Confirmation',
+              message: `Are you sure you want to disconnect from the server?\n\n${serverHost}`, // Include serverHost in the message
             });
 
             if (result.response === 0) {
@@ -323,6 +490,19 @@ function buildMenu(serverHost) { // Take serverHost as argument
           click: async () => {
             const { shell } = require('electron')
             await shell.openExternal('https://github.com/leikoilja/librechat-ui')
+          }
+        },
+        {
+          label: 'Keyboard Shortcuts',
+          click: () => {
+            dialog.showMessageBox(mainWindow, {
+              type: 'info',
+              title: 'Keyboard Shortcuts',
+              message: `
+                Cmd/Ctrl+N: New Chat
+                Cmd/Ctrl+Shift+A: Archive Chat
+              `,
+            });
           }
         }
       ]
