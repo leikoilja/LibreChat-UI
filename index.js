@@ -138,29 +138,25 @@ function initialize() {
 
 let shortcutRegistrationStatus = {
   newChat: false,
-  archiveChat: false,
+  toggleSidebar: false,
+  togglePrivateChat: false,
 };
 
 function registerShortcuts(mainWindow) {
-    if (shortcutRegistrationStatus.newChat && shortcutRegistrationStatus.archiveChat) {
+    if (shortcutRegistrationStatus.newChat && shortcutRegistrationStatus.toggleSidebar && shortcutRegistrationStatus.togglePrivateChat) {
         return;
     }
 
-    // Cmd+N (or Ctrl+N) to navigate to "/c/new"
-    if(!shortcutRegistrationStatus.newChat) {
+    // Cmd+N (or Ctrl+N) to click the "New chat" button
+    if (!shortcutRegistrationStatus.newChat) {
       shortcutRegistrationStatus.newChat = globalShortcut.register('CommandOrControl+N', () => {
-        const savedHost = store.get("serverHost");
-        if (savedHost) {
-            const url = `${savedHost}/c/new`;
-            console.log('Cmd+N (or Ctrl+N) is pressed: Navigating to ' + url);
-            if (mainWindow && !mainWindow.isDestroyed()) { // Check if mainWindow exists and is not destroyed
-              mainWindow.loadURL(url);
-            } else {
-              console.log('MainWindow is not available or has been destroyed. Shortcut cannot be executed.');
-            }
-
+        console.log('Cmd+N (or Ctrl+N) is pressed: Clicking "New chat" button.');
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.executeJavaScript(`
+            document.querySelector('button[aria-label="New chat"]')?.click();
+          `);
         } else {
-            console.log('serverHost is not defined in store, check submit-server-host, skipping Ctrl+N');
+          console.log('MainWindow is not available or has been destroyed. Shortcut cannot be executed.');
         }
       });
 
@@ -169,115 +165,51 @@ function registerShortcuts(mainWindow) {
       }
     }
 
-    // Cmd+Shift+A (or Ctrl+Shift+A) to find and click the correct Archive button
-    if(!shortcutRegistrationStatus.archiveChat) {
-      shortcutRegistrationStatus.archiveChat = globalShortcut.register('CommandOrControl+Shift+A', () => {
-        console.log('Cmd+Shift+A (or Ctrl+Shift+A) is pressed: Confirming archive before proceeding.');
-
-        const currentURL = mainWindow.webContents.getURL();
-        const chatId = currentURL.match(/\/c\/([a-zA-Z0-9-]+)/)?.[1];
-
-        if (!chatId) {
-            console.log('Could not extract chat ID from URL.');
-            dialog.showMessageBox(mainWindow, {
-                type: 'error',
-                title: 'Error',
-                message: 'Could not determine which chat to archive. Please navigate to a valid chat before using this shortcut.',
-            });
-            return;
+    // Cmd+Shift+S (or Ctrl+Shift+S) to toggle the sidebar
+    if (!shortcutRegistrationStatus.toggleSidebar) {
+      shortcutRegistrationStatus.toggleSidebar = globalShortcut.register('CommandOrControl+Shift+S', () => {
+        console.log('Cmd+Shift+S (or Ctrl+Shift+S) is pressed: Toggling sidebar.');
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.executeJavaScript(`
+            document.querySelector('button[aria-label="Close sidebar"]')?.click();
+          `);
+        } else {
+          console.log('MainWindow is not available or has been destroyed. Shortcut cannot be executed.');
         }
-
-        mainWindow.webContents.executeJavaScript(`
-            (async () => {
-                const chatId = "${chatId}";
-                console.log('ChatId: ' + chatId)
-                const linkSelector = 'a[href="/c/' + chatId + '"]';
-                console.log('Link selector:', linkSelector); // Log the selector
-
-                const anchor = document.querySelector(linkSelector);
-                console.log('Anchor element:', anchor); // Log the anchor element
-
-                let chatTitle = 'This chat';  // Default title
-                if (anchor) {
-                    chatTitle = anchor.textContent || 'This chat';
-                    console.log('Chat title:', chatTitle);
-
-                } else {
-                    console.log('Link with href="/c/${chatId}" not found.');
-                }
-                return chatTitle;
-            })();
-        `).then((chatTitle) => {
-            dialog.showMessageBox(mainWindow, {
-                type: 'question',
-                buttons: ['OK', 'Cancel'],
-                defaultId: 0,
-                title: 'Archive Confirmation',
-                message: `Are you sure you want to archive "${chatTitle}"? This action cannot be undone.`,
-            }).then((result) => {
-                if (result.response === 0) { // OK button clicked (or Enter pressed)
-                    console.log('User confirmed archiving. Proceeding...');
-
-                    mainWindow.webContents.executeJavaScript(`
-                        (async () => {
-                            const chatId = "${chatId}";
-                            console.log('ChatId: ' + chatId)
-                            const linkSelector = 'a[href="/c/' + chatId + '"]';
-                            console.log('Link selector:', linkSelector); // Log the selector
-
-                            const anchor = document.querySelector(linkSelector);
-                            console.log('Anchor element:', anchor); // Log the anchor element
-
-                            if (anchor) {
-                              let conversationMenuButton = anchor.parentElement.querySelector('div > button[aria-label="Conversation Menu Options"]');
-                              if (!conversationMenuButton) {
-                                console.log('Conversation Menu Button not found!');
-                                return;
-                              }
-                              console.log("Conversation Menu Button: ", conversationMenuButton)
-
-                            // Find the archive button within the same container
-                            const archiveElement = conversationMenuButton.parentElement.querySelector('div[role="menuitem"] svg.lucide-archive')?.closest('div[role="menuitem"]');
-                            if (archiveElement) {
-                                console.log("Archive element: ", archiveElement);
-                                archiveElement.click();
-                                return;
-                            } else {
-                                console.log('Archive button not found next to converstationMenuButton button.');
-                            }
-                          } else {
-                              console.log('Link with href="/c/${chatId}" not found.');
-                          }
-                        })();
-                    `);
-                } else {
-                    console.log('User cancelled archiving.');
-                }
-            });
-        }).catch(err => {
-            console.error("Error extracting chat title:", err);
-            dialog.showMessageBox(mainWindow, {
-                type: 'error',
-                title: 'Error',
-                message: 'Failed to determine chat title. Archiving may continue without the title in the confirmation message.',
-            }).then(() => {
-                // Proceed with archiving logic but user is already warned.
-            });
-        });
       });
 
-      if (!shortcutRegistrationStatus.archiveChat) {
-        console.error("Failed to register shortcut for Archive Chat.");
+      if (!shortcutRegistrationStatus.toggleSidebar) {
+        console.error("Failed to register shortcut for Toggle Sidebar.");
+      }
+    }
+
+    // Cmd+Shift+P (or Ctrl+Shift+P) to toggle private chat
+    if (!shortcutRegistrationStatus.togglePrivateChat) {
+      shortcutRegistrationStatus.togglePrivateChat = globalShortcut.register('CommandOrControl+Shift+P', () => {
+        console.log('Cmd+Shift+P (or Ctrl+Shift+P) is pressed: Toggling private chat.');
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.executeJavaScript(`
+            document.querySelector('button[aria-label="Temporary Chat"]')?.click();
+          `);
+        } else {
+          console.log('MainWindow is not available or has been destroyed. Shortcut cannot be executed.');
+        }
+      });
+
+      if (!shortcutRegistrationStatus.togglePrivateChat) {
+        console.error("Failed to register shortcut for Toggle Private Chat.");
       }
     }
 }
 
 function unregisterShortcuts() {
   globalShortcut.unregister('CommandOrControl+N');
-  globalShortcut.unregister('CommandOrControl+Shift+A');
+  globalShortcut.unregister('CommandOrControl+Shift+S');
+  globalShortcut.unregister('CommandOrControl+Shift+P');
   shortcutRegistrationStatus = {
     newChat: false,
-    archiveChat: false,
+    toggleSidebar: false,
+    togglePrivateChat: false,
   };
 }
 
@@ -499,8 +431,9 @@ function buildMenu(serverHost) { // Take serverHost as argument
               type: 'info',
               title: 'Keyboard Shortcuts',
               message: `
-                Cmd/Ctrl+N: New Chat
-                Cmd/Ctrl+Shift+A: Archive Chat
+                Cmd/Ctrl+N: Clicks \'New Chat\' button
+                Cmd/Ctrl+Shift+S: Toggle sidebar
+                Cmd/Ctrl+Shift+P: Toggle private chat
               `,
             });
           }
