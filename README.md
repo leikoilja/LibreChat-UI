@@ -31,9 +31,13 @@ LibreChat UI is a native desktop application wrapper for self-hosted LibreChat i
 
 - Native desktop application for LibreChat
 - Keyboard shortcuts
-  - `cmd+n / ctrl+n` to click the "New chat" button
-  - `cmd+shift+s / ctrl+shift+s` to toggle the sidebar
-  - `cmd+shift+p / ctrl+shift+p` to toggle private chat
+  - `Cmd/Ctrl+N`: Clicks 'New Chat' button
+  - `Cmd/Ctrl+Shift+S`: Toggle sidebar
+  - `Cmd/Ctrl+Shift+P`: Toggle private chat
+  - `Ctrl+K`: Scroll up
+  - `Ctrl+J`: Scroll down
+  - `Ctrl+U`: Scroll to top
+  - `Ctrl+D`: Scroll to bottom
 - Cross-platform support (for now it's just macOS, but feel free to request more OS support)
 - Easy access to self-hosted or [managed](https://librechat-librechat.hf.space) LibreChat instances
 
