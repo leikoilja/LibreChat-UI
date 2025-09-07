@@ -87,6 +87,7 @@ function createMainWindow(serverHost) {
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
+      preload: path.join(__dirname, 'preload.js')
     },
     icon: path.join(__dirname, "build", "assets", "icon.icns"),
   });
@@ -107,23 +108,7 @@ function createMainWindow(serverHost) {
   // Call function to build menu
   buildMenu(serverHost); // Pass serverHost to buildMenu
 
-  // Register/unregister global shortcuts based on focus
-  mainWindow.on('focus', () => {
-    registerShortcuts(mainWindow);
-  });
 
-  mainWindow.on('blur', () => {
-    unregisterShortcuts();
-  });
-
-
-  // Register global shortcuts after mainWindow is created
-  mainWindow.webContents.on('did-finish-load', () => {
-    // Register on load as well, in case the window already has focus
-    if (mainWindow.isFocused()) {
-      registerShortcuts(mainWindow);
-    }
-  });
 }
 
 function initialize() {
@@ -136,84 +121,9 @@ function initialize() {
   }
 }
 
-let shortcutRegistrationStatus = {
-  newChat: false,
-  toggleSidebar: false,
-  togglePrivateChat: false,
-};
 
-function registerShortcuts(mainWindow) {
-    if (shortcutRegistrationStatus.newChat && shortcutRegistrationStatus.toggleSidebar && shortcutRegistrationStatus.togglePrivateChat) {
-        return;
-    }
 
-    // Cmd+N (or Ctrl+N) to click the "New chat" button
-    if (!shortcutRegistrationStatus.newChat) {
-      shortcutRegistrationStatus.newChat = globalShortcut.register('CommandOrControl+N', () => {
-        console.log('Cmd+N (or Ctrl+N) is pressed: Clicking "New chat" button.');
-        if (mainWindow && !mainWindow.isDestroyed()) {
-          mainWindow.webContents.executeJavaScript(`
-            document.querySelector('button[aria-label="New chat"]')?.click();
-          `);
-        } else {
-          console.log('MainWindow is not available or has been destroyed. Shortcut cannot be executed.');
-        }
-      });
-
-      if (!shortcutRegistrationStatus.newChat) {
-        console.error("Failed to register shortcut for New Chat.");
-      }
-    }
-
-    // Cmd+Shift+S (or Ctrl+Shift+S) to toggle the sidebar
-    if (!shortcutRegistrationStatus.toggleSidebar) {
-      shortcutRegistrationStatus.toggleSidebar = globalShortcut.register('CommandOrControl+Shift+S', () => {
-        console.log('Cmd+Shift+S (or Ctrl+Shift+S) is pressed: Toggling sidebar.');
-        if (mainWindow && !mainWindow.isDestroyed()) {
-          mainWindow.webContents.executeJavaScript(`
-            document.querySelector('button[aria-label="Close sidebar"]')?.click();
-          `);
-        } else {
-          console.log('MainWindow is not available or has been destroyed. Shortcut cannot be executed.');
-        }
-      });
-
-      if (!shortcutRegistrationStatus.toggleSidebar) {
-        console.error("Failed to register shortcut for Toggle Sidebar.");
-      }
-    }
-
-    // Cmd+Shift+P (or Ctrl+Shift+P) to toggle private chat
-    if (!shortcutRegistrationStatus.togglePrivateChat) {
-      shortcutRegistrationStatus.togglePrivateChat = globalShortcut.register('CommandOrControl+Shift+P', () => {
-        console.log('Cmd+Shift+P (or Ctrl+Shift+P) is pressed: Toggling private chat.');
-        if (mainWindow && !mainWindow.isDestroyed()) {
-          mainWindow.webContents.executeJavaScript(`
-            document.querySelector('button[aria-label="Temporary Chat"]')?.click();
-          `);
-        } else {
-          console.log('MainWindow is not available or has been destroyed. Shortcut cannot be executed.');
-        }
-      });
-
-      if (!shortcutRegistrationStatus.togglePrivateChat) {
-        console.error("Failed to register shortcut for Toggle Private Chat.");
-      }
-    }
-}
-
-function unregisterShortcuts() {
-  globalShortcut.unregister('CommandOrControl+N');
-  globalShortcut.unregister('CommandOrControl+Shift+S');
-  globalShortcut.unregister('CommandOrControl+Shift+P');
-  shortcutRegistrationStatus = {
-    newChat: false,
-    toggleSidebar: false,
-    togglePrivateChat: false,
-  };
-}
-
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   console.log("App is ready");
 
   if (!isDev) {
@@ -230,6 +140,9 @@ app.whenReady().then(() => {
   }
 
   initialize();
+
+  const { default: initializeShortcuts } = await import('./shortcuts.cjs');
+  initializeShortcuts(globalShortcut, mainWindow);
 });
 
 app.on("window-all-closed", () => {
@@ -244,9 +157,7 @@ app.on("activate", () => {
   }
 });
 
-app.on('will-quit', () => {
-  unregisterShortcuts(); // Ensure shortcuts are unregistered on quit
-});
+
 
 ipcMain.on("submit-server-host", (event, serverHost) => {
   console.log("Saving server host:", serverHost);
@@ -431,9 +342,14 @@ function buildMenu(serverHost) { // Take serverHost as argument
               type: 'info',
               title: 'Keyboard Shortcuts',
               message: `
-                Cmd/Ctrl+N: Clicks \'New Chat\' button
+                Cmd/Ctrl+N: Start a new chat
                 Cmd/Ctrl+Shift+S: Toggle sidebar
                 Cmd/Ctrl+Shift+P: Toggle private chat
+
+                Ctrl+K: Scroll up
+                Ctrl+J: Scroll down
+                Ctrl+U: Scroll to top
+                Ctrl+D: Scroll to bottom
               `,
             });
           }
