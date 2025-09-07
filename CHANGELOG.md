@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.4.0](https://github.com/leikoilja/LibreChat-UI/compare/v1.3.0...v1.4.0) (2025-09-07)
+
+
+### 🚀 Features
+
+* add toggle for sidebar and private chat ([9f59ab0](https://github.com/leikoilja/LibreChat-UI/commit/9f59ab07ace51d8b3e145d45b1c9daa9e00155a9))
+* **shortcuts:** add scrolling, toggle for private, toggle for sidebar ([#22](https://github.com/leikoilja/LibreChat-UI/issues/22)) ([0e22c78](https://github.com/leikoilja/LibreChat-UI/commit/0e22c78d71e6b059646f5ddaeafc33cba00f99c4))
+
+
+### Documentation
+
+* add shortcuts documentation to readme ([de5e0c7](https://github.com/leikoilja/LibreChat-UI/commit/de5e0c76bc67b619a92e88cde0565e7886968db7))
+* **fix:** docs(fix):  ([de5e0c7](https://github.com/leikoilja/LibreChat-UI/commit/de5e0c76bc67b619a92e88cde0565e7886968db7))
+* fix ([de5e0c7](https://github.com/leikoilja/LibreChat-UI/commit/de5e0c76bc67b619a92e88cde0565e7886968db7))
+
 ## [1.3.0](https://github.com/leikoilja/LibreChat-UI/compare/v1.2.0...v1.3.0) (2025-03-22)
 
 
